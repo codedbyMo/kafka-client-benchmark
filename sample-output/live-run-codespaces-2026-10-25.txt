@@ -1,0 +1,44 @@
+Live run, GitHub Codespaces (codespace "gruesome graveyard", 2-core),
+2026-10-25 ~22:44 UTC. Command:
+BROKERS=kafka:9092 BROKER_VERSION="Apache Kafka 4.1.2" CLIENTS=kafkajs,platformatic,confluent npm run bench
+
+Result: PARTIAL. KafkaJS completed all phases with validation passing.
+Platformatic aborted in its producer phase (opaque AggregateError,
+PLT_KFK_MULTIPLE, "produce failed 4 times"; inner errors not expanded by
+the client). The bench process exited, so Confluent never ran and no
+summary table was printed. KafkaJS output below is verbatim from the run.
+
+(node:3244) TimeoutNegativeWarning: -1792968250084 is a negative number.
+Timeout duration was set to 1.
+
+--- benchmark configuration ---
+client:         kafkajs 2.2.4
+node:           v24.22.1
+broker:         Apache Kafka 4.1.2 at kafka:9092
+messages:       20000 per run, 3 measured runs (+ warm-up)
+payload:        256 bytes/message, seed 24301
+topic layout:   3 partitions, replication factor 1, one fresh topic per client per run
+producer acks:  -1 (-1 = all in-sync replicas)
+producer shape: scenario=serial, batchSize=200 messages per send call
+consumer:       fresh group per run, fetch/count-only handler, mode=eachBatch (kafkajs) or client equivalent
+compression:    none (client defaults overridden where the client allows)
+----------------------------------------
+
+Producer (serial) runs for kafkajs:
+ run 0: {"messages":20000,"sendCalls":100,"wallMs":696,"messagesPerSec":28734,"sendCallP50Ms":6.37,"sendCallP95Ms":11.79,"sendCallP99Ms":15.68,"cpuMs":447,"rssDeltaMb":18}
+ run 1: {"messages":20000,"sendCalls":100,"wallMs":495,"messagesPerSec":40426,"sendCallP50Ms":4.7,"sendCallP95Ms":9.16,"sendCallP99Ms":12.16,"cpuMs":312,"rssDeltaMb":0.4}
+ run 2: {"messages":20000,"sendCalls":100,"wallMs":431,"messagesPerSec":46446,"sendCallP50Ms":3.82,"sendCallP95Ms":8.99,"sendCallP99Ms":18.76,"cpuMs":266,"rssDeltaMb":0.4}
+Producer (serial) headline (median-throughput run): {"messages":20000,"sendCalls":100,"wallMs":495,"messagesPerSec":40426,"sendCallP50Ms":4.7,"sendCallP95Ms":9.16,"sendCallP99Ms":12.16,"cpuMs":312,"rssDeltaMb":0.4}
+
+Consumer (fetch/count-only) runs for kafkajs:
+ run 0: {"messages":20000,"wallMs":505,"messagesPerSec":39617,"cpuMs":532,"rssDeltaMb":46.5,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+ run 1: {"messages":20000,"wallMs":1174,"messagesPerSec":17039,"cpuMs":699,"rssDeltaMb":1.3,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+ run 2: {"messages":20000,"wallMs":437,"messagesPerSec":45806,"cpuMs":429,"rssDeltaMb":8.4,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+Consumer headline (median-throughput run): {"messages":20000,"wallMs":505,"messagesPerSec":39617,"cpuMs":532,"rssDeltaMb":46.5,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+
+Platformatic phase: configuration block printed (same settings, client
+platformatic 2.14.0, "acks is a native per-send setting ... using
+acks=-1 exactly as configured"), then:
+Benchmark failed: MultipleErrors [AggregateError]: Producing messages failed.
+  code: 'PLT_KFK_MULTIPLE', produced: { offsets: [] },
+  inner: "produce failed 4 times" (nested errors not expanded in output)
