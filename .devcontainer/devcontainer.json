@@ -1,12 +1,17 @@
 {
   "name": "kafka-client-benchmark",
-  "dockerComposeFile": "../docker-compose.yml",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "docker-compose.yml"
+  ],
   "service": "bench",
   "workspaceFolder": "/app",
   "postCreateCommand": "npm ci",
   "customizations": {
     "vscode": {
-      "extensions": ["dbaeumer.vscode-eslint"]
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
     }
   },
   "remoteUser": "node"

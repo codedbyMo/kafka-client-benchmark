@@ -1,0 +1,11 @@
+# Codespaces / devcontainer override.
+#
+# The base docker-compose.yml gives the bench service a one-shot command
+# (npm ci && npm run bench), which is right for a plain `docker compose up`
+# run but wrong for a devcontainer: the service container must stay alive
+# or Codespaces drops into recovery mode ("Container exited, check the
+# runCommand configuration"). This override keeps the bench container
+# running so the benchmark is started manually from the terminal.
+services:
+  bench:
+    command: sleep infinity
