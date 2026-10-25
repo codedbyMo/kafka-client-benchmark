@@ -14,5 +14,6 @@
       ]
     }
   },
-  "remoteUser": "node"
+  "remoteUser": "node",
+  "overrideCommand": true
 }
