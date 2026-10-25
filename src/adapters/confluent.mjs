@@ -49,8 +49,21 @@ export async function createProducer(config) {
   return {
     // send() resolves with delivery reports, i.e. only after the broker
     // has acknowledged with the creation-time acks setting.
+    //
+    // The messages are shallow-copied on the way in: the compatibility
+    // client's send() stamps partition (-1), timestamp (0) and converted
+    // headers onto the message objects it is given, in place
+    // (lib/kafkajs/_producer.js). The harness reuses one dataset across
+    // clients and phases, and a stamped `partition: -1` is poison for a
+    // later KafkaJS send of the same objects (seedTopic writes the
+    // dataset with KafkaJS): KafkaJS's partitioner honours the explicit
+    // partition, groups everything under -1, and its leader lookup
+    // silently drops the unknown partition, so the send resolves having
+    // written nothing. The copies absorb the stamping; the shared
+    // dataset objects stay pristine.
     async sendBatch(topic, chunk) {
-      await producer.send({ topic, messages: chunk });
+      const messages = chunk.map((message) => ({ ...message }));
+      await producer.send({ topic, messages });
     },
     async close() {
       await producer.disconnect();

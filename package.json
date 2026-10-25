@@ -9,6 +9,7 @@
     "node": ">=22.22.0 || >=24.6.0"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "bench": "node src/bench.mjs",
     "bench:kafkajs": "CLIENTS=kafkajs node src/bench.mjs",
     "bench:platformatic": "CLIENTS=platformatic node src/bench.mjs",
@@ -19,5 +20,8 @@
     "@confluentinc/kafka-javascript": "1.11.0",
     "@platformatic/kafka": "2.14.0",
     "kafkajs": "2.2.4"
+  },
+  "devDependencies": {
+    "patch-package": "8.0.0"
   }
 }

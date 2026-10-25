@@ -51,6 +51,15 @@ npm ci
 BROKERS=127.0.0.1:9092 BROKER_VERSION="Apache Kafka 4.1.2" npm run bench
 ```
 
+`npm ci` also runs a `postinstall` step (`patch-package`) that applies
+`patches/kafkajs+2.2.4.patch`: a one-line clamp in KafkaJS's request
+queue, whose throttle scheduling otherwise computes a hugely negative
+`setTimeout` delay (`throttledUntil` starts at -1) and makes Node print
+a `TimeoutNegativeWarning` on every run. KafkaJS 2.2.4 is unmaintained,
+so the fix is carried as a patch; the pinned version is unchanged and
+the clamp does not alter any measured behaviour (Node already clamped
+the negative delay to ~1 ms).
+
 ## Clients
 
 | Client | Version | Notes |
@@ -91,6 +100,22 @@ another run whose configuration block matches.
   first message arrives, so group join and assignment are excluded.
   RSS is a before/after delta, not a peak measurement.
 
+## Failure handling and exit codes
+
+One client's failure never aborts the run. Failures are isolated per
+client and per phase: if a client's producer phase fails, its consumer
+phase still runs, and the remaining clients still run. In the printed
+output the failed phase shows a `FAILED` line with the error; in the
+final `RESULTS_JSON` block the failed phase's entry is
+`{ "status": "FAILED", "error": "..." }` in place of its runs, next to
+the other clients' completed results.
+
+Exit code: **0** when every client and phase completed; **1** when at
+least one client or phase failed (the summary is still printed in
+full), and also for fatal setup failures (unreadable configuration, or
+no broker reachable at all), where nothing was measured and no summary
+is printed.
+
 ## Methodology
 
 ### Dataset isolation
@@ -116,7 +141,11 @@ npm run seed:check   # prints the dataset checksum and message digests
 ### Exact counting
 
 Before a consumer run, the harness verifies by partition offsets that
-the seeded topic holds *exactly* the dataset. During the run, a
+the seeded topic holds *exactly* the dataset. The verification polls
+the offset read until the count matches or a 30-second deadline
+passes: a single read taken immediately after topic creation and
+seeding can lag on a fresh topic, so one read is not trusted on its
+own. During the run, a
 validator checks the consumed set, not just the total: every sequence
 number in range seen exactly once, no foreign data, and an
 order-independent checksum equal to the seeded dataset's checksum. A

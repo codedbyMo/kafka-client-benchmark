@@ -1,0 +1,23 @@
+Live run follow-ups, GitHub Codespaces ("gruesome graveyard"), 2026-10-25 ~23:07-23:30 UTC.
+
+CONFLUENT (CLIENTS=confluent, run twice, same outcome):
+Producer (serial) completed. Runs:
+ run 0: {"messages":20000,"sendCalls":100,"wallMs":1058,"messagesPerSec":18912,"sendCallP50Ms":9.86,"sendCallP95Ms":15.17,"sendCallP99Ms":22.34,"cpuMs":337,"rssDeltaMb":14}
+ run 1: {"messages":20000,"sendCalls":100,"wallMs":860,"messagesPerSec":23264,"sendCallP50Ms":7.98,"sendCallP95Ms":11.25,"sendCallP99Ms":16.45,"cpuMs":303,"rssDeltaMb":3}
+ run 2: {"messages":20000,"sendCalls":100,"wallMs":834,"messagesPerSec":23995,"sendCallP50Ms":7.69,"sendCallP95Ms":11.05,"sendCallP99Ms":22.03,"cpuMs":264,"rssDeltaMb":0.3}
+Headline (median run): 23,264 msg/s, p50 7.98ms per send call.
+Then the consumer phase failed at seeding verification:
+"Seeding verification failed for bench-confluent-consumer-r0-...: expected
+20000 messages, broker holds 0" (bench.mjs seedTopic). No consumer results.
+Diagnosis: a harness seeding-path defect for the Confluent adapter
+(messages not delivered before the offset check), not a client produce
+failure; the same client had just produced 60,000 messages successfully.
+
+PLATFORMATIC confirmation (diag2.mjs): topic diag-topic-2 created first
+via KafkaJS admin ("TOPIC CREATED"), 3 partitions, RF 1, 3s settle, then
+a one-message Platformatic send with acks -1:
+SEND FAILED: PLT_KFK_MULTIPLE "metadata failed 4 times", each nested
+error: TypeError: Cannot read properties of undefined (reading 'topicId').
+Conclusion: the missing-topic explanation is eliminated. Platformatic
+2.14.0's metadata handling crashes against Apache Kafka 4.1.2 whether or
+not the topic exists.

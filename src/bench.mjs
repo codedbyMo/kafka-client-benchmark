@@ -93,6 +93,16 @@ async function produceOnce(adapter, config, topic, messages, scenario) {
   };
 }
 
+// Seeding verification polls the offset read until the count matches or
+// the deadline passes. A single read taken immediately after topic
+// creation and seeding can lag reality on a fresh topic (leader election
+// and metadata propagation are concurrent with the check), so one read
+// is not trusted on its own; this is a bounded poll, not a fixed sleep,
+// and when the deadline expires the failure is the same error as a
+// single-read check would have raised, with the last observed count.
+const SEED_VERIFY_DEADLINE_MS = 30_000;
+const SEED_VERIFY_POLL_MS = 250;
+
 async function seedTopic(admin, config, topic, messages) {
   await ensureTopic(admin, topic, config.partitions, config.replicationFactor);
   const seeder = await kafkajsAdapter.createProducer(config);
@@ -103,7 +113,12 @@ async function seedTopic(admin, config, topic, messages) {
   } finally {
     await seeder.close();
   }
-  const stored = await topicMessageCount(admin, topic);
+  const deadline = Date.now() + SEED_VERIFY_DEADLINE_MS;
+  let stored = await topicMessageCount(admin, topic);
+  while (stored !== messages.length && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, SEED_VERIFY_POLL_MS));
+    stored = await topicMessageCount(admin, topic);
+  }
   if (stored !== messages.length) {
     throw new Error(`Seeding verification failed for ${topic}: expected ${messages.length} messages, broker holds ${stored}`);
   }
@@ -162,6 +177,20 @@ async function benchConsumer(admin, adapter, config, messages, runId) {
   return runs;
 }
 
+// One client's failure must not abort the whole run: a client that
+// cannot talk to the broker at all (e.g. a client/broker version
+// incompatibility in its metadata step) would otherwise hide every
+// other client's results and the summary. Failures are therefore
+// isolated per client and per phase, recorded in the results in place
+// of that phase's runs as { status: 'FAILED', error }, and the process
+// exit code is non-zero if anything failed (see README, "Failure
+// handling and exit codes").
+function failureRecord(error) {
+  const message = error && error.message ? error.message : String(error);
+  const code = error && error.code && !message.includes(String(error.code)) ? ` [${error.code}]` : '';
+  return { status: 'FAILED', error: message + code };
+}
+
 async function main() {
   const config = loadConfig();
   const messages = generateDataset(config.messages, config.payloadBytes, config.seed);
@@ -169,9 +198,20 @@ async function main() {
   const admin = createAdmin(config.brokers);
   await admin.connect();
   const allResults = {};
+  let anyFailure = false;
   try {
     for (const clientName of config.clients) {
-      const adapter = await loadAdapter(clientName);
+      let adapter;
+      try {
+        adapter = await loadAdapter(clientName);
+      } catch (error) {
+        anyFailure = true;
+        const failure = failureRecord(error);
+        allResults[clientName] = failure;
+        console.log(`\nClient ${clientName} FAILED to load: ${failure.error}`);
+        console.log('\n==================================================\n');
+        continue;
+      }
       printConfig(config, adapter.name, adapter.version);
       console.log(adapter.acksNote(config));
 
@@ -179,25 +219,41 @@ async function main() {
         config.producerScenario === 'both' ? ['serial', 'bounded'] : [config.producerScenario];
       const producerResults = {};
       for (const scenario of scenarios) {
-        const runs = await benchProducerScenario(admin, adapter, config, messages, runId, scenario);
-        producerResults[scenario] = runs;
-        console.log(`\nProducer (${scenario}) runs for ${adapter.name}:`);
-        for (const [i, r] of runs.entries()) console.log(`  run ${i}:`, JSON.stringify(r));
-        console.log(
-          `Producer (${scenario}) headline (median-throughput run; its latency percentiles and CPU/RSS are that run's own):`,
-          JSON.stringify(medianRun(runs))
-        );
+        try {
+          const runs = await benchProducerScenario(admin, adapter, config, messages, runId, scenario);
+          producerResults[scenario] = runs;
+          console.log(`\nProducer (${scenario}) runs for ${adapter.name}:`);
+          for (const [i, r] of runs.entries()) console.log(`  run ${i}:`, JSON.stringify(r));
+          console.log(
+            `Producer (${scenario}) headline (median-throughput run; its latency percentiles and CPU/RSS are that run's own):`,
+            JSON.stringify(medianRun(runs))
+          );
+        } catch (error) {
+          anyFailure = true;
+          const failure = failureRecord(error);
+          producerResults[scenario] = failure;
+          console.log(`\nProducer (${scenario}) FAILED for ${adapter.name}: ${failure.error}`);
+        }
       }
 
-      const consumerRuns = await benchConsumer(admin, adapter, config, messages, runId);
-      console.log(`\nConsumer (fetch/count-only) runs for ${adapter.name}:`);
-      for (const [i, r] of consumerRuns.entries()) console.log(`  run ${i}:`, JSON.stringify(r));
-      console.log(
-        'Consumer headline (median-throughput run):',
-        JSON.stringify(medianRun(consumerRuns))
-      );
+      let consumerResult;
+      try {
+        const consumerRuns = await benchConsumer(admin, adapter, config, messages, runId);
+        consumerResult = consumerRuns;
+        console.log(`\nConsumer (fetch/count-only) runs for ${adapter.name}:`);
+        for (const [i, r] of consumerRuns.entries()) console.log(`  run ${i}:`, JSON.stringify(r));
+        console.log(
+          'Consumer headline (median-throughput run):',
+          JSON.stringify(medianRun(consumerRuns))
+        );
+      } catch (error) {
+        anyFailure = true;
+        const failure = failureRecord(error);
+        consumerResult = failure;
+        console.log(`\nConsumer FAILED for ${adapter.name}: ${failure.error}`);
+      }
 
-      allResults[adapter.name] = { producer: producerResults, consumer: consumerRuns };
+      allResults[adapter.name] = { producer: producerResults, consumer: consumerResult };
       console.log('\n==================================================\n');
     }
   } finally {
@@ -206,6 +262,11 @@ async function main() {
   console.log('RESULTS_JSON_BEGIN');
   console.log(JSON.stringify(allResults, null, 2));
   console.log('RESULTS_JSON_END');
+  // exitCode (not exit()) so the summary above is flushed first. A fatal
+  // setup failure (bad config, broker unreachable) never reaches this
+  // point: it throws out of main() and exits 1 with no summary, because
+  // nothing was measured.
+  if (anyFailure) process.exitCode = 1;
 }
 
 main().catch((error) => {
