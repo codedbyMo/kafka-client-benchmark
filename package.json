@@ -1,0 +1,23 @@
+{
+  "name": "kafka-client-benchmark",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A small, honest benchmark harness for Node.js Kafka clients: isolated datasets, exact counting, aligned durability settings.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.22.0 || >=24.6.0"
+  },
+  "scripts": {
+    "bench": "node src/bench.mjs",
+    "bench:kafkajs": "CLIENTS=kafkajs node src/bench.mjs",
+    "bench:platformatic": "CLIENTS=platformatic node src/bench.mjs",
+    "seed:check": "node src/seed.mjs",
+    "test:logic": "node --test test/logic.test.mjs"
+  },
+  "dependencies": {
+    "@confluentinc/kafka-javascript": "1.11.0",
+    "@platformatic/kafka": "2.14.0",
+    "kafkajs": "2.2.4"
+  }
+}

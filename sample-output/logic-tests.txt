@@ -1,0 +1,26 @@
+$ npm run test:logic
+
+> kafka-client-benchmark@1.0.0 test:logic
+> node --test test/logic.test.mjs
+
+✔ dataset generation is deterministic within a process (77.6739ms)
+✔ dataset generation is deterministic across processes (182.395943ms)
+✔ a single message regenerates identically out of order (5.330185ms)
+✔ different seeds produce different datasets (3.209184ms)
+✔ validator accepts the exact dataset in any delivery order (61.418307ms)
+✔ validator rejects a duplicate (double-counted) message (3.301322ms)
+✔ validator rejects a short read (missing messages) (2.806891ms)
+✔ validator refuses to count past the target (no overshoot) (0.521653ms)
+✔ validator rejects foreign data (wrong seed pollutes the set) (1.741643ms)
+✔ percentile and median definitions (0.489694ms)
+✔ producer summary refuses empty samples (0.494832ms)
+✔ medianRun picks the middle-throughput run (0.222184ms)
+✔ default config aligns durability at acks=-1 (0.373811ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 518.541258

@@ -1,0 +1,48 @@
+# One-command local lab: an Apache Kafka broker (KRaft, single node) plus
+# a runner that executes the benchmark against it.
+#
+#   docker compose up --build          # runs the default benchmark
+#   CLIENTS=platformatic docker compose up --build
+#
+# Pinned images: apache/kafka 4.1.2, node 24.22.1 (bookworm slim).
+services:
+  kafka:
+    image: apache/kafka:4.1.2
+    container_name: bench-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: bench-cluster-0001
+    ports:
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  bench:
+    image: node:24.22.1-bookworm-slim
+    container_name: bench-runner
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      BROKERS: kafka:9092
+      BROKER_VERSION: "Apache Kafka 4.1.2"
+      CLIENTS: ${CLIENTS:-kafkajs,platformatic}
+      MESSAGES: ${MESSAGES:-20000}
+      RUNS: ${RUNS:-3}
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: sh -c "npm ci && npm run bench"

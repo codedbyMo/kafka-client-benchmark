@@ -1,0 +1,12 @@
+$ npm run seed:check
+
+
+messages:       20000
+payloadBytes:   256
+seed:           24301
+checksum (hex): 53e4e3bc22fe6c8e
+first message:  key=key-0 sha256=e60724061157871faeebde23c5dd578dabe51fef4a8818256b1874e65fbc301d
+last message:   key=key-19999 sha256=7a0c9e725273e1b858c0e3683e7ab93b8a3b881f7b65c1de6b6d8476f03863a9
+
+$ npm run seed:check (second run, checksums must match)
+checksum (hex): 53e4e3bc22fe6c8e

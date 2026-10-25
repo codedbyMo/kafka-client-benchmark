@@ -1,0 +1,45 @@
+=== Attempted live run on the build VM (2026-10-25) ===
+Broker: Apache Kafka 4.1.2 (KRaft, single node) on Temurin/OpenJDK 21
+Broker log excerpt:
+[2026-10-25 19:28:00,921] INFO [controller-1-to-controller-registration-channel-manager]: Recorded new KRaft controller, from now on will use node 127.0.0.1:19093 (id: 1 rack: null isFenced: false) (kafka.server.NodeToControllerRequestThread)
+[2026-10-25 19:28:01,103] INFO [broker-1-to-controller-forwarding-channel-manager]: Recorded new KRaft controller, from now on will use node 127.0.0.1:19093 (id: 1 rack: null isFenced: false) (kafka.server.NodeToControllerRequestThread)
+java.lang.OutOfMemoryError: Java heap space
+org.apache.kafka.common.internals.FatalExitError
+
+=== Harness attempt (BROKERS=127.0.0.1:19092, kafkajs) ===
+{"level":"ERROR","timestamp":"2026-10-25T19:28:10.937Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:19092","broker":"127.0.0.1:19092","clientId":"bench-admin","stack":"Error: connect ECONNREFUSED 127.0.0.1:19092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)"}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:10.940Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:19092","retryCount":0,"retryTime":280}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:11.222Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:19092","broker":"127.0.0.1:19092","clientId":"bench-admin","stack":"Error: connect ECONNREFUSED 127.0.0.1:19092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)"}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:11.223Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:19092","retryCount":1,"retryTime":494}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:11.718Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:19092","broker":"127.0.0.1:19092","clientId":"bench-admin","stack":"Error: connect ECONNREFUSED 127.0.0.1:19092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)"}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:11.719Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:19092","retryCount":2,"retryTime":984}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:12.705Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:19092","broker":"127.0.0.1:19092","clientId":"bench-admin","stack":"Error: connect ECONNREFUSED 127.0.0.1:19092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)"}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:12.706Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:19092","retryCount":3,"retryTime":1794}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:14.501Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:19092","broker":"127.0.0.1:19092","clientId":"bench-admin","stack":"Error: connect ECONNREFUSED 127.0.0.1:19092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)"}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:14.501Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:19092","retryCount":4,"retryTime":3516}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:18.020Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:19092","broker":"127.0.0.1:19092","clientId":"bench-admin","stack":"Error: connect ECONNREFUSED 127.0.0.1:19092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:2083:16)"}
+{"level":"ERROR","timestamp":"2026-10-25T19:28:18.021Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:19092","retryCount":5,"retryTime":7762}
+Benchmark failed: KafkaJSNonRetriableError
+  Caused by: KafkaJSConnectionError: Connection error: connect ECONNREFUSED 127.0.0.1:19092
+    at Socket.onError (/home/hatch/workspace/kafka-client-benchmark/node_modules/kafkajs/src/network/connection.js:210:23)
+    ... 3 lines matching cause stack trace ...
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  name: 'KafkaJSNumberOfRetriesExceeded',
+  retriable: false,
+  helpUrl: undefined,
+  retryCount: 5,
+  retryTime: 7762,
+  [cause]: KafkaJSConnectionError: Connection error: connect ECONNREFUSED 127.0.0.1:19092
+      at Socket.onError (/home/hatch/workspace/kafka-client-benchmark/node_modules/kafkajs/src/network/connection.js:210:23)
+      at Socket.emit (node:events:514:28)
+      at emitErrorNT (node:internal/streams/destroy:170:8)
+      at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+    retriable: true,
+    helpUrl: undefined,
+    broker: '127.0.0.1:19092',
+    code: 'ECONNREFUSED',
+    [cause]: undefined
+  }
+}
+bench exit: 1

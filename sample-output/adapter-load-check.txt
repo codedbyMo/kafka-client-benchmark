@@ -1,0 +1,5 @@
+$ node src/adapters-check.mjs
+kafkajs: version=2.2.4 createProducer=function consumeOnce=function
+platformatic: version=2.14.0 createProducer=function consumeOnce=function
+confluent: version=1.11.0 createProducer=function consumeOnce=function
+All adapters loaded OK
