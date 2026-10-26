@@ -1,0 +1,596 @@
+
+> kafka-client-benchmark@1.0.0 bench
+> node src/bench.mjs
+
+--- benchmark configuration ---
+client:          kafkajs 2.2.4
+node:            v24.22.1
+broker:          Apache Kafka 4.1.2 at kafka:9092
+messages:        20000 per run, 3 measured runs (+ warm-up)
+payload:         256 bytes/message, seed 24301
+topic layout:    3 partitions, replication factor 1, one fresh topic per client per run
+producer acks:   -1 (-1 = all in-sync replicas)
+producer shape:  scenario=both, batchSize=200 messages per send call, concurrency=10
+consumer:        fresh group per run, fetch/count-only handler, mode=eachBatch (kafkajs) or client equivalent
+compression:     none (client defaults overridden where the client allows)
+-------------------------------
+kafkajs: acks is a native per-send setting; using acks=-1 exactly as configured.
+{"level":"WARN","timestamp":"2026-10-26T00:34:23.184Z","logger":"kafkajs","message":"KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option \"createPartitioner: Partitioners.LegacyPartitioner\". See the migration guide at https://kafka.js.org/docs/migration-guide-v2.0.0#producer-new-default-partitioner for details. Silence this warning by setting the environment variable \"KAFKAJS_NO_PARTITIONER_WARNING=1\""}
+
+Producer (serial) runs for kafkajs:
+  run 0: {"messages":20000,"sendCalls":100,"wallMs":463,"messagesPerSec":43178,"sendCallP50Ms":4.05,"sendCallP95Ms":8.89,"sendCallP99Ms":11.35,"cpuMs":394,"rssDeltaMb":19}
+  run 1: {"messages":20000,"sendCalls":100,"wallMs":469,"messagesPerSec":42625,"sendCallP50Ms":4.26,"sendCallP95Ms":8.13,"sendCallP99Ms":10.59,"cpuMs":308,"rssDeltaMb":0.5}
+  run 2: {"messages":20000,"sendCalls":100,"wallMs":688,"messagesPerSec":29082,"sendCallP50Ms":6.29,"sendCallP95Ms":11.54,"sendCallP99Ms":27.68,"cpuMs":337,"rssDeltaMb":0.4}
+Producer (serial) headline (median-throughput run; its latency percentiles and CPU/RSS are that run's own): {"messages":20000,"sendCalls":100,"wallMs":469,"messagesPerSec":42625,"sendCallP50Ms":4.26,"sendCallP95Ms":8.13,"sendCallP99Ms":10.59,"cpuMs":308,"rssDeltaMb":0.5}
+
+Producer (bounded) runs for kafkajs:
+  run 0: {"messages":20000,"sendCalls":100,"wallMs":516,"messagesPerSec":38727,"sendCallP50Ms":43.7,"sendCallP95Ms":112.64,"sendCallP99Ms":129.88,"cpuMs":322,"rssDeltaMb":4.1}
+  run 1: {"messages":20000,"sendCalls":100,"wallMs":380,"messagesPerSec":52614,"sendCallP50Ms":36.29,"sendCallP95Ms":52.14,"sendCallP99Ms":67.28,"cpuMs":309,"rssDeltaMb":0.9}
+  run 2: {"messages":20000,"sendCalls":100,"wallMs":407,"messagesPerSec":49107,"sendCallP50Ms":38.76,"sendCallP95Ms":74.64,"sendCallP99Ms":74.7,"cpuMs":320,"rssDeltaMb":3.1}
+Producer (bounded) headline (median-throughput run; its latency percentiles and CPU/RSS are that run's own): {"messages":20000,"sendCalls":100,"wallMs":407,"messagesPerSec":49107,"sendCallP50Ms":38.76,"sendCallP95Ms":74.64,"sendCallP99Ms":74.7,"cpuMs":320,"rssDeltaMb":3.1}
+{"level":"INFO","timestamp":"2026-10-26T00:34:28.971Z","logger":"kafkajs","message":"[Consumer] Starting","groupId":"bench-kafkajs-r0-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:29.013Z","logger":"kafkajs","message":"[ConsumerGroup] Consumer has joined the group","groupId":"bench-kafkajs-r0-mvoixuhf","memberId":"bench-ae178a6a-5972-4222-b9a3-31c13c4e02b7","leaderId":"bench-ae178a6a-5972-4222-b9a3-31c13c4e02b7","isLeader":true,"memberAssignment":{"bench-kafkajs-consumer-r0-mvoixuhf":[0,1,2]},"groupProtocol":"RoundRobinAssigner","duration":40}
+{"level":"INFO","timestamp":"2026-10-26T00:34:29.659Z","logger":"kafkajs","message":"[Runner] consumer not running, exiting","groupId":"bench-kafkajs-r0-mvoixuhf","memberId":"bench-ae178a6a-5972-4222-b9a3-31c13c4e02b7"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:29.669Z","logger":"kafkajs","message":"[Consumer] Stopped","groupId":"bench-kafkajs-r0-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:29.669Z","logger":"kafkajs","message":"[Consumer] Stopped","groupId":"bench-kafkajs-r0-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:30.486Z","logger":"kafkajs","message":"[Consumer] Starting","groupId":"bench-kafkajs-r1-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:30.495Z","logger":"kafkajs","message":"[ConsumerGroup] Consumer has joined the group","groupId":"bench-kafkajs-r1-mvoixuhf","memberId":"bench-cd093b8e-817d-4acf-8433-12d87c951715","leaderId":"bench-cd093b8e-817d-4acf-8433-12d87c951715","isLeader":true,"memberAssignment":{"bench-kafkajs-consumer-r1-mvoixuhf":[0,1,2]},"groupProtocol":"RoundRobinAssigner","duration":8}
+{"level":"INFO","timestamp":"2026-10-26T00:34:30.921Z","logger":"kafkajs","message":"[Runner] consumer not running, exiting","groupId":"bench-kafkajs-r1-mvoixuhf","memberId":"bench-cd093b8e-817d-4acf-8433-12d87c951715"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:30.928Z","logger":"kafkajs","message":"[Consumer] Stopped","groupId":"bench-kafkajs-r1-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:30.928Z","logger":"kafkajs","message":"[Consumer] Stopped","groupId":"bench-kafkajs-r1-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:31.707Z","logger":"kafkajs","message":"[Consumer] Starting","groupId":"bench-kafkajs-r2-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:31.715Z","logger":"kafkajs","message":"[ConsumerGroup] Consumer has joined the group","groupId":"bench-kafkajs-r2-mvoixuhf","memberId":"bench-ca9a4c8b-121b-4dba-856f-165ddade0c7a","leaderId":"bench-ca9a4c8b-121b-4dba-856f-165ddade0c7a","isLeader":true,"memberAssignment":{"bench-kafkajs-consumer-r2-mvoixuhf":[0,1,2]},"groupProtocol":"RoundRobinAssigner","duration":8}
+{"level":"INFO","timestamp":"2026-10-26T00:34:32.236Z","logger":"kafkajs","message":"[Runner] consumer not running, exiting","groupId":"bench-kafkajs-r2-mvoixuhf","memberId":"bench-ca9a4c8b-121b-4dba-856f-165ddade0c7a"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:32.243Z","logger":"kafkajs","message":"[Consumer] Stopped","groupId":"bench-kafkajs-r2-mvoixuhf"}
+{"level":"INFO","timestamp":"2026-10-26T00:34:32.243Z","logger":"kafkajs","message":"[Consumer] Stopped","groupId":"bench-kafkajs-r2-mvoixuhf"}
+
+Consumer (fetch/count-only) runs for kafkajs:
+  run 0: {"messages":20000,"wallMs":500,"messagesPerSec":40017,"cpuMs":564,"rssDeltaMb":53.9,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+  run 1: {"messages":20000,"wallMs":407,"messagesPerSec":49188,"cpuMs":427,"rssDeltaMb":3.5,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+  run 2: {"messages":20000,"wallMs":507,"messagesPerSec":39482,"cpuMs":495,"rssDeltaMb":59.8,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+Consumer headline (median-throughput run): {"messages":20000,"wallMs":500,"messagesPerSec":40017,"cpuMs":564,"rssDeltaMb":53.9,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+
+==================================================
+
+--- benchmark configuration ---
+client:          platformatic 2.14.0
+node:            v24.22.1
+broker:          Apache Kafka 4.1.2 at kafka:9092
+messages:        20000 per run, 3 measured runs (+ warm-up)
+payload:         256 bytes/message, seed 24301
+topic layout:    3 partitions, replication factor 1, one fresh topic per client per run
+producer acks:   -1 (-1 = all in-sync replicas)
+producer shape:  scenario=both, batchSize=200 messages per send call, concurrency=10
+consumer:        fresh group per run, fetch/count-only handler, mode=eachBatch (kafkajs) or client equivalent
+compression:     none (client defaults overridden where the client allows)
+-------------------------------
+platformatic: acks is a native per-send setting with the same -1/0/1 semantics; using acks=-1 exactly as configured.
+
+Producer (serial) FAILED for platformatic: Producing messages failed. [PLT_KFK_MULTIPLE]
+
+Producer (bounded) FAILED for platformatic: Producing messages failed. [PLT_KFK_MULTIPLE]
+
+Consumer (fetch/count-only) runs for platformatic:
+  run 0: {"messages":20000,"wallMs":115732,"messagesPerSec":173,"cpuMs":6371,"rssDeltaMb":-137.1,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+  run 1: {"messages":20000,"wallMs":113799,"messagesPerSec":176,"cpuMs":5895,"rssDeltaMb":-27.1,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+  run 2: {"messages":20000,"wallMs":113162,"messagesPerSec":177,"cpuMs":5648,"rssDeltaMb":15.1,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+Consumer headline (median-throughput run): {"messages":20000,"wallMs":113799,"messagesPerSec":176,"cpuMs":5895,"rssDeltaMb":-27.1,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+
+==================================================
+
+--- benchmark configuration ---
+client:          confluent 1.11.0
+node:            v24.22.1
+broker:          Apache Kafka 4.1.2 at kafka:9092
+messages:        20000 per run, 3 measured runs (+ warm-up)
+payload:         256 bytes/message, seed 24301
+topic layout:    3 partitions, replication factor 1, one fresh topic per client per run
+producer acks:   -1 (-1 = all in-sync replicas)
+producer shape:  scenario=both, batchSize=200 messages per send call, concurrency=10
+consumer:        fresh group per run, fetch/count-only handler, mode=eachBatch (kafkajs) or client equivalent
+compression:     none (client defaults overridden where the client allows)
+-------------------------------
+confluent: DIFFERENCE - acks is not a per-send option in the compatibility API; it is set once at producer creation ('acks': '-1'), which is the closest documented equivalent and applies to every send this producer makes.
+{
+  message: 'Producer connected',
+  name: 'bench#producer-1',
+  fac: 'BINDING',
+  timestamp: 1792975225900
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-1',
+  fac: 'BINDING',
+  timestamp: 1792975225932
+}
+{
+  message: 'Producer connected',
+  name: 'bench#producer-2',
+  fac: 'BINDING',
+  timestamp: 1792975226155
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-2',
+  fac: 'BINDING',
+  timestamp: 1792975226927
+}
+{
+  message: 'Producer connected',
+  name: 'bench#producer-3',
+  fac: 'BINDING',
+  timestamp: 1792975227148
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-3',
+  fac: 'BINDING',
+  timestamp: 1792975227880
+}
+{
+  message: 'Producer connected',
+  name: 'bench#producer-4',
+  fac: 'BINDING',
+  timestamp: 1792975228096
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-4',
+  fac: 'BINDING',
+  timestamp: 1792975228833
+}
+
+Producer (serial) runs for confluent:
+  run 0: {"messages":20000,"sendCalls":100,"wallMs":772,"messagesPerSec":25898,"sendCallP50Ms":7.09,"sendCallP95Ms":10.3,"sendCallP99Ms":15.47,"cpuMs":270,"rssDeltaMb":0.7}
+  run 1: {"messages":20000,"sendCalls":100,"wallMs":732,"messagesPerSec":27320,"sendCallP50Ms":7.01,"sendCallP95Ms":8.76,"sendCallP99Ms":11.4,"cpuMs":260,"rssDeltaMb":0.8}
+  run 2: {"messages":20000,"sendCalls":100,"wallMs":737,"messagesPerSec":27126,"sendCallP50Ms":7,"sendCallP95Ms":8.96,"sendCallP99Ms":11.85,"cpuMs":239,"rssDeltaMb":0}
+Producer (serial) headline (median-throughput run; its latency percentiles and CPU/RSS are that run's own): {"messages":20000,"sendCalls":100,"wallMs":737,"messagesPerSec":27126,"sendCallP50Ms":7,"sendCallP95Ms":8.96,"sendCallP99Ms":11.85,"cpuMs":239,"rssDeltaMb":0}
+{
+  message: 'Producer connected',
+  name: 'bench#producer-5',
+  fac: 'BINDING',
+  timestamp: 1792975229050
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-5',
+  fac: 'BINDING',
+  timestamp: 1792975229069
+}
+{
+  message: 'Producer connected',
+  name: 'bench#producer-6',
+  fac: 'BINDING',
+  timestamp: 1792975229288
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-6',
+  fac: 'BINDING',
+  timestamp: 1792975229508
+}
+{
+  message: 'Producer connected',
+  name: 'bench#producer-7',
+  fac: 'BINDING',
+  timestamp: 1792975229728
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-7',
+  fac: 'BINDING',
+  timestamp: 1792975230091
+}
+{
+  message: 'Producer connected',
+  name: 'bench#producer-8',
+  fac: 'BINDING',
+  timestamp: 1792975230317
+}
+{
+  message: 'Producer disconnected',
+  name: 'bench#producer-8',
+  fac: 'BINDING',
+  timestamp: 1792975230671
+}
+
+Producer (bounded) runs for confluent:
+  run 0: {"messages":20000,"sendCalls":100,"wallMs":220,"messagesPerSec":90926,"sendCallP50Ms":18.65,"sendCallP95Ms":43.23,"sendCallP99Ms":44.77,"cpuMs":258,"rssDeltaMb":13.8}
+  run 1: {"messages":20000,"sendCalls":100,"wallMs":363,"messagesPerSec":55133,"sendCallP50Ms":33.5,"sendCallP95Ms":54.11,"sendCallP99Ms":56.71,"cpuMs":293,"rssDeltaMb":8.3}
+  run 2: {"messages":20000,"sendCalls":100,"wallMs":354,"messagesPerSec":56520,"sendCallP50Ms":33.96,"sendCallP95Ms":45.66,"sendCallP99Ms":49.35,"cpuMs":301,"rssDeltaMb":0.7}
+Producer (bounded) headline (median-throughput run; its latency percentiles and CPU/RSS are that run's own): {"messages":20000,"sendCalls":100,"wallMs":354,"messagesPerSec":56520,"sendCallP50Ms":33.96,"sendCallP95Ms":45.66,"sendCallP99Ms":49.35,"cpuMs":301,"rssDeltaMb":0.7}
+{
+  message: 'Consumer connected',
+  name: 'bench#consumer-9',
+  fac: 'BINDING',
+  timestamp: 1792975232617
+}
+{
+  message: "Received rebalance event with message: 'Local: Assign partitions' and 3 partition(s), isLost: false",
+  name: 'bench#consumer-9',
+  fac: 'BINDING',
+  timestamp: 1792975232683
+}
+{
+  message: "Received rebalance event with message: 'Local: Revoke partitions' and 3 partition(s), isLost: false",
+  name: 'bench#consumer-9',
+  fac: 'BINDING',
+  timestamp: 1792975233995
+}
+{
+  message: 'Consumer disconnected',
+  name: 'bench#consumer-9',
+  fac: 'BINDING',
+  timestamp: 1792975234006
+}
+{
+  message: 'Consumer connected',
+  name: 'bench#consumer-10',
+  fac: 'BINDING',
+  timestamp: 1792975234880
+}
+{
+  message: "Received rebalance event with message: 'Local: Assign partitions' and 3 partition(s), isLost: false",
+  name: 'bench#consumer-10',
+  fac: 'BINDING',
+  timestamp: 1792975234938
+}
+{
+  message: "Received rebalance event with message: 'Local: Revoke partitions' and 3 partition(s), isLost: false",
+  name: 'bench#consumer-10',
+  fac: 'BINDING',
+  timestamp: 1792975235637
+}
+{
+  message: 'Consumer disconnected',
+  name: 'bench#consumer-10',
+  fac: 'BINDING',
+  timestamp: 1792975235652
+}
+{
+  message: 'Consumer connected',
+  name: 'bench#consumer-11',
+  fac: 'BINDING',
+  timestamp: 1792975236543
+}
+{
+  message: "Received rebalance event with message: 'Local: Assign partitions' and 3 partition(s), isLost: false",
+  name: 'bench#consumer-11',
+  fac: 'BINDING',
+  timestamp: 1792975236554
+}
+{
+  message: "Received rebalance event with message: 'Local: Revoke partitions' and 3 partition(s), isLost: false",
+  name: 'bench#consumer-11',
+  fac: 'BINDING',
+  timestamp: 1792975237267
+}
+{
+  message: 'Consumer disconnected',
+  name: 'bench#consumer-11',
+  fac: 'BINDING',
+  timestamp: 1792975237278
+}
+
+Consumer (fetch/count-only) runs for confluent:
+  run 0: {"messages":20000,"wallMs":1193,"messagesPerSec":16762,"cpuMs":1053,"rssDeltaMb":79.3,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+  run 1: {"messages":20000,"wallMs":608,"messagesPerSec":32910,"cpuMs":690,"rssDeltaMb":8.8,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+  run 2: {"messages":20000,"wallMs":619,"messagesPerSec":32294,"cpuMs":677,"rssDeltaMb":1.4,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+Consumer headline (median-throughput run): {"messages":20000,"wallMs":619,"messagesPerSec":32294,"cpuMs":677,"rssDeltaMb":1.4,"validation":{"ok":true,"count":20000,"unique":20000,"missing":0,"duplicates":0,"outOfRange":0,"checksumOk":true}}
+
+==================================================
+
+RESULTS_JSON_BEGIN
+{
+  "kafkajs": {
+    "producer": {
+      "serial": [
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 463,
+          "messagesPerSec": 43178,
+          "sendCallP50Ms": 4.05,
+          "sendCallP95Ms": 8.89,
+          "sendCallP99Ms": 11.35,
+          "cpuMs": 394,
+          "rssDeltaMb": 19
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 469,
+          "messagesPerSec": 42625,
+          "sendCallP50Ms": 4.26,
+          "sendCallP95Ms": 8.13,
+          "sendCallP99Ms": 10.59,
+          "cpuMs": 308,
+          "rssDeltaMb": 0.5
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 688,
+          "messagesPerSec": 29082,
+          "sendCallP50Ms": 6.29,
+          "sendCallP95Ms": 11.54,
+          "sendCallP99Ms": 27.68,
+          "cpuMs": 337,
+          "rssDeltaMb": 0.4
+        }
+      ],
+      "bounded": [
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 516,
+          "messagesPerSec": 38727,
+          "sendCallP50Ms": 43.7,
+          "sendCallP95Ms": 112.64,
+          "sendCallP99Ms": 129.88,
+          "cpuMs": 322,
+          "rssDeltaMb": 4.1
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 380,
+          "messagesPerSec": 52614,
+          "sendCallP50Ms": 36.29,
+          "sendCallP95Ms": 52.14,
+          "sendCallP99Ms": 67.28,
+          "cpuMs": 309,
+          "rssDeltaMb": 0.9
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 407,
+          "messagesPerSec": 49107,
+          "sendCallP50Ms": 38.76,
+          "sendCallP95Ms": 74.64,
+          "sendCallP99Ms": 74.7,
+          "cpuMs": 320,
+          "rssDeltaMb": 3.1
+        }
+      ]
+    },
+    "consumer": [
+      {
+        "messages": 20000,
+        "wallMs": 500,
+        "messagesPerSec": 40017,
+        "cpuMs": 564,
+        "rssDeltaMb": 53.9,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      },
+      {
+        "messages": 20000,
+        "wallMs": 407,
+        "messagesPerSec": 49188,
+        "cpuMs": 427,
+        "rssDeltaMb": 3.5,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      },
+      {
+        "messages": 20000,
+        "wallMs": 507,
+        "messagesPerSec": 39482,
+        "cpuMs": 495,
+        "rssDeltaMb": 59.8,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      }
+    ]
+  },
+  "platformatic": {
+    "producer": {
+      "serial": {
+        "status": "FAILED",
+        "error": "Producing messages failed. [PLT_KFK_MULTIPLE]"
+      },
+      "bounded": {
+        "status": "FAILED",
+        "error": "Producing messages failed. [PLT_KFK_MULTIPLE]"
+      }
+    },
+    "consumer": [
+      {
+        "messages": 20000,
+        "wallMs": 115732,
+        "messagesPerSec": 173,
+        "cpuMs": 6371,
+        "rssDeltaMb": -137.1,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      },
+      {
+        "messages": 20000,
+        "wallMs": 113799,
+        "messagesPerSec": 176,
+        "cpuMs": 5895,
+        "rssDeltaMb": -27.1,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      },
+      {
+        "messages": 20000,
+        "wallMs": 113162,
+        "messagesPerSec": 177,
+        "cpuMs": 5648,
+        "rssDeltaMb": 15.1,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      }
+    ]
+  },
+  "confluent": {
+    "producer": {
+      "serial": [
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 772,
+          "messagesPerSec": 25898,
+          "sendCallP50Ms": 7.09,
+          "sendCallP95Ms": 10.3,
+          "sendCallP99Ms": 15.47,
+          "cpuMs": 270,
+          "rssDeltaMb": 0.7
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 732,
+          "messagesPerSec": 27320,
+          "sendCallP50Ms": 7.01,
+          "sendCallP95Ms": 8.76,
+          "sendCallP99Ms": 11.4,
+          "cpuMs": 260,
+          "rssDeltaMb": 0.8
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 737,
+          "messagesPerSec": 27126,
+          "sendCallP50Ms": 7,
+          "sendCallP95Ms": 8.96,
+          "sendCallP99Ms": 11.85,
+          "cpuMs": 239,
+          "rssDeltaMb": 0
+        }
+      ],
+      "bounded": [
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 220,
+          "messagesPerSec": 90926,
+          "sendCallP50Ms": 18.65,
+          "sendCallP95Ms": 43.23,
+          "sendCallP99Ms": 44.77,
+          "cpuMs": 258,
+          "rssDeltaMb": 13.8
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 363,
+          "messagesPerSec": 55133,
+          "sendCallP50Ms": 33.5,
+          "sendCallP95Ms": 54.11,
+          "sendCallP99Ms": 56.71,
+          "cpuMs": 293,
+          "rssDeltaMb": 8.3
+        },
+        {
+          "messages": 20000,
+          "sendCalls": 100,
+          "wallMs": 354,
+          "messagesPerSec": 56520,
+          "sendCallP50Ms": 33.96,
+          "sendCallP95Ms": 45.66,
+          "sendCallP99Ms": 49.35,
+          "cpuMs": 301,
+          "rssDeltaMb": 0.7
+        }
+      ]
+    },
+    "consumer": [
+      {
+        "messages": 20000,
+        "wallMs": 1193,
+        "messagesPerSec": 16762,
+        "cpuMs": 1053,
+        "rssDeltaMb": 79.3,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      },
+      {
+        "messages": 20000,
+        "wallMs": 608,
+        "messagesPerSec": 32910,
+        "cpuMs": 690,
+        "rssDeltaMb": 8.8,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      },
+      {
+        "messages": 20000,
+        "wallMs": 619,
+        "messagesPerSec": 32294,
+        "cpuMs": 677,
+        "rssDeltaMb": 1.4,
+        "validation": {
+          "ok": true,
+          "count": 20000,
+          "unique": 20000,
+          "missing": 0,
+          "duplicates": 0,
+          "outOfRange": 0,
+          "checksumOk": true
+        }
+      }
+    ]
+  }
+}
+RESULTS_JSON_END
