@@ -250,3 +250,20 @@ and `sample-output/attempted-live-run.txt` shows the actual attempt.
 Run any of the three routes above in a normal environment to produce
 live numbers; nothing in this repository presents a number that was not
 measured.
+
+## Known issues
+
+- **@platformatic/kafka 2.14.0 cannot produce to Apache Kafka 4.1.2.**
+  Its metadata handling throws `TypeError: Cannot read properties of
+  undefined (reading 'topicId')` against the 4.1.2 broker, in both
+  producer scenarios, whether or not the topic already exists; the
+  failure surfaces as `PLT_KFK_MULTIPLE` ("metadata failed 4 times",
+  then "Producing messages failed"). Its consumer does connect and
+  completed the benchmark workload, very slowly (~176 msg/s median on a
+  2-core Codespace, versus ~40,000 msg/s for KafkaJS). Reproduce with
+  `CLIENTS=platformatic npm run bench`; the harness records both
+  producer phases as FAILED and continues. Evidence:
+  `sample-output/live-run-codespaces-2026-10-25-part2.txt` and
+  `sample-output/live-run-codespaces-2026-10-25-final.txt`. This is a
+  client/broker version incompatibility in the client, not a harness
+  defect; the harness's job is to record it, which it now does.
