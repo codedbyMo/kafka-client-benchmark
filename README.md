@@ -293,6 +293,7 @@ measured.
   `CLIENTS=platformatic npm run bench`; the harness records both
   producer phases as FAILED and continues. Evidence:
   `sample-output/live-run-codespaces-2026-10-25-part2.txt` and
-  `sample-output/live-run-codespaces-2026-10-25-final.txt`. This is a
-  client/broker version incompatibility in the client, not a harness
-  defect; the harness's job is to record it, which it now does.
+  `sample-output/live-run-codespaces-2026-10-25-final.txt`. Whether the cause sits
+  in the client, the broker interaction, or the harness is not
+  established by this run; the harness's job is to record it, which
+  it now does.
