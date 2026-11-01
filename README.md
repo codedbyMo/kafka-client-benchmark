@@ -278,14 +278,18 @@ measured.
 
 ## Known issues
 
-- **@platformatic/kafka 2.14.0 cannot produce to Apache Kafka 4.1.2.**
-  Its metadata handling throws `TypeError: Cannot read properties of
-  undefined (reading 'topicId')` against the 4.1.2 broker, in both
-  producer scenarios, whether or not the topic already exists; the
-  failure surfaces as `PLT_KFK_MULTIPLE` ("metadata failed 4 times",
-  then "Producing messages failed"). Its consumer does connect and
-  completed the benchmark workload, very slowly (~176 msg/s median on a
-  2-core Codespace, versus ~40,000 msg/s for KafkaJS). Reproduce with
+- **@platformatic/kafka 2.14.0 failed during producer metadata
+  handling in the tested configuration** (this harness, Apache Kafka
+  4.1.2, Codespaces). Its metadata handling throws `TypeError: Cannot
+  read properties of undefined (reading 'topicId')` against the 4.1.2
+  broker, in both producer scenarios, whether or not the topic already
+  exists; the failure surfaces as `PLT_KFK_MULTIPLE` ("metadata failed
+  4 times", then "Producing messages failed"). This needs isolation
+  and an upstream reproduction before attributing the cause or
+  generalizing compatibility. Its consumer does connect and completed
+  the benchmark workload in that run (~176 msg/s median on a 2-core
+  Codespace, versus ~40,000 msg/s for KafkaJS, measured under the
+  pre-correction timing windows described above). Reproduce with
   `CLIENTS=platformatic npm run bench`; the harness records both
   producer phases as FAILED and continues. Evidence:
   `sample-output/live-run-codespaces-2026-10-25-part2.txt` and
