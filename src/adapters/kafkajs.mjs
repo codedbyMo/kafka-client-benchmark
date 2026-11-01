@@ -43,6 +43,11 @@ export async function createProducer(config) {
 //
 // Timing and CPU/RSS baselines are taken when the FIRST batch/message
 // arrives, so group join and assignment are excluded from every figure.
+// The window ends when the target count is reached and the counted set's
+// final commit has completed inside the handler; consumer.stop() and
+// consumer.disconnect() are teardown and sit outside the window.
+// (Methodology correction, Oct 31, 2026: teardown time was previously
+// included in wallMs.)
 //
 // Offset policy (both modes):
 //   - autoCommit is off. Nothing is committed on a timer.
@@ -84,6 +89,9 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
     resolveDone();
   };
 
+  let end;
+  let cpuAtEnd;
+  let rssEnd;
   try {
     if (config.consumerMode === 'eachMessage') {
       const lastCountedByPartition = new Map();
@@ -132,6 +140,12 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
       });
     }
     await done;
+    // Target reached and the final commit of the counted set completed
+    // inside the handler (both precede finish()): the window ends here,
+    // before the teardown in the finally block.
+    end = process.hrtime.bigint();
+    cpuAtEnd = process.cpuUsage(cpu0);
+    rssEnd = process.memoryUsage().rss;
   } finally {
     clearTimeout(timer);
     try {
@@ -142,11 +156,10 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
     await consumer.disconnect();
   }
 
-  const wallMs = Number(process.hrtime.bigint() - start) / 1e6;
-  const cpu = process.cpuUsage(cpu0);
+  const wallMs = Number(end - start) / 1e6;
   return {
     wallMs,
-    cpuMs: (cpu.user + cpu.system) / 1000,
-    rssDeltaMb: (process.memoryUsage().rss - rss0) / 1e6,
+    cpuMs: (cpuAtEnd.user + cpuAtEnd.system) / 1000,
+    rssDeltaMb: (rssEnd - rss0) / 1e6,
   };
 }

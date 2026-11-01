@@ -52,6 +52,18 @@ async function produceOnce(adapter, config, topic, messages, scenario) {
   const cpu0 = process.cpuUsage();
   const rss0 = process.memoryUsage().rss;
   const startAll = process.hrtime.bigint();
+  // The measurement window ends when the last send is acknowledged.
+  // Teardown (producer.close()) is not measured work: the end-of-window
+  // snapshots are taken before close() runs. (Methodology correction,
+  // Oct 31, 2026: close() time was previously inside wallMs.)
+  let endAll;
+  let cpu;
+  let rssEnd;
+  const snapshotEnd = () => {
+    endAll = process.hrtime.bigint();
+    cpu = process.cpuUsage(cpu0);
+    rssEnd = process.memoryUsage().rss;
+  };
   try {
     if (scenario === 'bounded') {
       // Bounded concurrency: at most config.concurrency send calls in
@@ -79,17 +91,20 @@ async function produceOnce(adapter, config, topic, messages, scenario) {
         sendLatenciesMs.push(Number(process.hrtime.bigint() - t0) / 1e6);
       }
     }
+    snapshotEnd();
   } finally {
+    // On the failure path the window ends at the failure, still before
+    // close(), so teardown is excluded either way.
+    if (endAll === undefined) snapshotEnd();
     await producer.close();
   }
-  const wallMs = Number(process.hrtime.bigint() - startAll) / 1e6;
-  const cpu = process.cpuUsage(cpu0);
+  const wallMs = Number(endAll - startAll) / 1e6;
   return {
     sendLatenciesMs,
     totalMessages: messages.length,
     wallMs,
     cpuMs: (cpu.user + cpu.system) / 1000,
-    rssDeltaMb: (process.memoryUsage().rss - rss0) / 1e6,
+    rssDeltaMb: (rssEnd - rss0) / 1e6,
   };
 }
 

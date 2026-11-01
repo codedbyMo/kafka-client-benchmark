@@ -168,11 +168,36 @@ it twice. Per client:
   harness explicitly commits `last counted offset + 1` per partition.
   Same committed-offset policy as eachBatch, so the two modes are
   comparable.
-- **Platformatic**: each counted message is committed with
-  `message.commit()` immediately after counting; the stream is closed
-  at the target.
+- **Platformatic**: the last counted message per partition is tracked
+  during the run, and the counted set is committed once at the target
+  by committing each partition's last counted message
+  (`message.commit()` commits offset + 1); the stream is closed at the
+  target.
 - **Confluent**: eachMessage plus an explicit `commitOffsets()` of the
   counted set at the target, mirroring the KafkaJS eachMessage policy.
+
+### Methodology corrections (Oct 31, 2026)
+
+Two measurement defects found in review were corrected on Oct 31,
+2026:
+
+1. **Timing windows included teardown.** Producer wall time included
+   `producer.close()`, and consumer wall time was computed after
+   stop/disconnect/close. The windows now end when the measured work
+   ends: the last acknowledged send for producers, and the target count
+   plus the counted set's final commit for consumers. CPU and RSS
+   snapshots are taken at the same endpoint.
+2. **Commit workloads were not equivalent.** Platformatic committed
+   every counted record during its consumer run (`await
+   message.commit()` per record), while KafkaJS and Confluent
+   committed the counted set once at the end. All three adapters now
+   commit the counted set once, at the target.
+
+The published live run of Oct 25, 2026 (see `sample-output/`) used the
+earlier windows and the per-record Platformatic commits. It was not
+re-run after this correction, so its figures are observations under
+the old measurement contract, not a like-for-like ranking of the three
+clients.
 
 ### Durability alignment
 

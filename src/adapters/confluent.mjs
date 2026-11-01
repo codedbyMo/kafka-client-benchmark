@@ -73,7 +73,10 @@ export async function createProducer(config) {
 
 // Fetch/count-only consumer. Manual commit policy mirrors the other
 // adapters: 'enable.auto.commit' is false, and exactly the counted set is
-// committed explicitly once the target is reached.
+// committed explicitly once the target is reached. The measurement
+// window ends at that point; consumer.disconnect() is teardown and sits
+// outside it. (Methodology correction, Oct 31, 2026: disconnect time was
+// previously included in wallMs.)
 export async function consumeOnce({ config, topic, groupId, validator }) {
   const kafka = new Kafka();
   const consumer = kafka.consumer({
@@ -109,6 +112,9 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
   );
 
   const lastCountedByPartition = new Map();
+  let end;
+  let cpuAtEnd;
+  let rssEnd;
   try {
     const runPromise = consumer.run({
       eachMessage: async ({ partition, message }) => {
@@ -131,16 +137,21 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
     });
     runPromise.catch(rejectTimeout);
     await done;
+    // Target reached and the counted set committed inside the handler
+    // (both precede resolveDone()): the window ends here, before the
+    // teardown in the finally block.
+    end = process.hrtime.bigint();
+    cpuAtEnd = process.cpuUsage(cpu0);
+    rssEnd = process.memoryUsage().rss;
   } finally {
     clearTimeout(timer);
     await consumer.disconnect().catch(() => {});
   }
 
-  const wallMs = Number(process.hrtime.bigint() - start) / 1e6;
-  const cpu = process.cpuUsage(cpu0);
+  const wallMs = Number(end - start) / 1e6;
   return {
     wallMs,
-    cpuMs: (cpu.user + cpu.system) / 1000,
-    rssDeltaMb: (process.memoryUsage().rss - rss0) / 1e6,
+    cpuMs: (cpuAtEnd.user + cpuAtEnd.system) / 1000,
+    rssDeltaMb: (rssEnd - rss0) / 1e6,
   };
 }

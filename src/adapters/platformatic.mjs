@@ -39,13 +39,23 @@ export async function createProducer(config) {
 
 // Fetch/count-only consumer, same contract as the KafkaJS adapter: timing
 // and CPU/RSS baselines start at the first message, group setup excluded.
+// The window ends when the target count is reached and the counted set's
+// commit has completed; consumer.close() is teardown and sits outside
+// the window. (Methodology correction, Oct 31, 2026: close time was
+// previously included in wallMs.)
 //
 // Offset policy: autocommit is off and the stream runs in 'earliest' mode
-// for the fresh group. Each counted message is committed explicitly with
-// message.commit() right after it is counted; messages that were not
-// counted are never committed. The stream is closed as soon as the target
-// count is reached, so nothing past the target can be consumed or
-// committed by this run.
+// for the fresh group. The last counted message per partition is tracked
+// during the run, and the counted set is committed once, at the target,
+// by committing each partition's last counted message (message.commit()
+// commits offset + 1 through the stream's commit machinery, while the
+// stream is still live). Messages that were not counted are never
+// committed. The stream is closed as soon as the target count is
+// reached, so nothing past the target can be consumed or committed by
+// this run. (Methodology correction, Oct 31, 2026: this adapter
+// previously committed every counted record during the run, a heavier
+// workload than the other adapters' single end-of-run commit; the
+// policy is now aligned across all three adapters.)
 export async function consumeOnce({ config, topic, groupId, validator }) {
   const consumer = new Consumer({
     groupId,
@@ -65,6 +75,7 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
     }
   };
 
+  const lastCountedByPartition = new Map();
   const consumeLoop = (async () => {
     const stream = await consumer.consume({
       topics: [topic],
@@ -76,9 +87,17 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
       const before = validator.count;
       const more = validator.observe(message.value);
       if (validator.count > before) {
-        await message.commit();
+        lastCountedByPartition.set(message.partition, message);
       }
-      if (!more) break;
+      if (!more) {
+        // Target reached: commit the counted set once, now, mirroring
+        // the other adapters. No commits happen per record during the
+        // measured window.
+        for (const lastCounted of lastCountedByPartition.values()) {
+          await lastCounted.commit();
+        }
+        break;
+      }
     }
   })();
 
@@ -91,18 +110,25 @@ export async function consumeOnce({ config, topic, groupId, validator }) {
     );
   });
 
+  let end;
+  let cpuAtEnd;
+  let rssEnd;
   try {
     await Promise.race([consumeLoop, timeout]);
+    // Target reached and the counted set committed inside the loop: the
+    // window ends here, before the teardown in the finally block.
+    end = process.hrtime.bigint();
+    cpuAtEnd = process.cpuUsage(cpu0);
+    rssEnd = process.memoryUsage().rss;
   } finally {
     clearTimeout(timer);
     await consumer.close(true).catch(() => {});
   }
 
-  const wallMs = Number(process.hrtime.bigint() - start) / 1e6;
-  const cpu = process.cpuUsage(cpu0);
+  const wallMs = Number(end - start) / 1e6;
   return {
     wallMs,
-    cpuMs: (cpu.user + cpu.system) / 1000,
-    rssDeltaMb: (process.memoryUsage().rss - rss0) / 1e6,
+    cpuMs: (cpuAtEnd.user + cpuAtEnd.system) / 1000,
+    rssDeltaMb: (rssEnd - rss0) / 1e6,
   };
 }
